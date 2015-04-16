@@ -20,10 +20,10 @@ then
 fi
 
 case "${backup_type}" in
-	completo)
-		echo 19700101000000
+	'completo')
+		dname='backup19700101000000completo'
 		;;
-	differenziale)
+	'differenziale')
 		# Find the last completo
 		# Results are ordered alfabetically
 		for dname in `ls -d ${destination_dir}/backup*completo/ 2>/dev/null`
@@ -42,7 +42,7 @@ case "${backup_type}" in
 			exit 10
 		fi
 		;;
-	incrementale)
+	'incrementale')
 		# Find the last incrementale
 		# Results are ordered alfabetically
 		for dname in `find ${destination_dir} -maxdepth 1 -type d -name backup*incrementale`
