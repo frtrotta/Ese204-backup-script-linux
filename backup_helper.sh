@@ -4,39 +4,53 @@ source_dir=$1
 destination_dir=$2
 reference_date_string=$3
 
-if [ -z ${reference_date_string} ] || [ -z ${source_dir} ] || [ -z ${destination_dir} ]
+if [ -z ${source_dir} ] || [ -z ${destination_dir} ] || [ -z ${reference_date_string} ]
 then
-	echo pippo >&2
+	echo 'ERROR: missing parameter(s)' > /dev/stderr
+	echo "Syntax: $0 <source_dir> <destination_dir> <reference_date_string>" > /dev/stderr
 	exit 1
 fi
 
-echo ">== sono in ${source_dir}"
 for fname in `ls ${source_dir}`
 do
-	if [ -f "$fname" ]
+	relative_fname="${source_dir}/${fname}"
+	# relative_fname è necessario poiché la directory corrente non viene mai modificata.
+	# Per questa ragione relative fname memorizza il percorso realtivo dell'elemento (sia
+	# esso file o directory) rispetto alla cartella corrente
+	
+	if [ -f "${relative_fname}" ]
 	then
 		# Si tratta di un file
-		fdate=`stat -c %y $fname`
+		fdate=`stat -c %y $relative_fname`
 		fdate_string=`date --date="$fdate" +%Y%m%d%H%M%S`
 		if [ "${reference_date_string}" \< "${fdate_string}" ]
 		then
-			echo copio $fname in ${destination_dir}
-			# cp $fname ${destination_dir}
-			
+			echo "Copio ${relative_fname} in ${destination_dir}"
+			cp ${relative_fname} ${destination_dir}
 		fi
 	else
-		if [ -d "$fname" ]
+		if [ -d "${relative_fname}" ]
 		then
 			# Si tratta di una directory
-			echo "Creata directory ${destination_dir}/${fname}"
-			# mkdir ${destination_dir}/${fname}
-			# if [ $? -eq 0 ]
-			# then
-				 $0 ${source_dir}/${fname} ${destination_dir}/${fname} ${reference_date_string} 
-			# else
-				# echo "Unable to create ${fname} directory in ${destination_dir}" > &2
-			# fi
+			
+			# Creo la directory di destinazione
+			mkdir ${destination_dir}/${fname}
+			
+			if [ $? -eq 0 ]
+			then
+				# Chiamata ricorsiva
+				# Invoco lo script stesso con la sottodirectory sorgente appena individuata
+				$0 ${relative_fname} ${destination_dir}/${fname} ${reference_date_string}
+				
+			else
+				echo "ERROR: Unable to create ${fname} directory in ${destination_dir}" > /dev/stderr
+				echo 'Exiting...'  > /dev/stderr
+				exit 3
+			fi
+		else
+			echo "ERROR: unable to identify ${relative_fname} (is it a file o a directory?)" > /dev/stderr
+			echo 'Exiting...'  > /dev/stderr
+			exit 2
 		fi
 	fi
 done
-echo ">== FINITO in ${source_dir}"

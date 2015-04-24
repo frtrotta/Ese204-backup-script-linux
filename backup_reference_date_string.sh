@@ -45,31 +45,41 @@ case "${backup_type}" in
 	'incrementale')
 		# Find the last incrementale
 		# Results are ordered alfabetically
-		for dname in `find ${destination_dir} -maxdepth 1 -type d -name backup*incrementale`
+		for dname_incrementale in `find ${destination_dir} -maxdepth 1 -type d -name backup*incrementale`
 		# This is another way of listing all the directories contained in a specified path.
 		# Actually this is the preferred way, as it provides many more options when compared
 		# to ls
 		do
-			dname=`basename $dname`
+			dname_incrementale=`basename ${dname_incrementale}`
 		done
 		
-		if [ -z "$dname" ]
+		# Find the last completo
+		# Results are ordered alfabetically
+		for dname_completo in `find ${destination_dir} -maxdepth 1 -type d -name backup*completo`
+		do
+			dname_completo=`basename $dname_completo`
+		done
+		
+		if [ -z "${dname_incrementale}" ] && [ -z "${dname_completo}" ]
 		then
-			# Find the last completo
-			# Results are ordered alfabetically
-			for dname in `find ${destination_dir} -maxdepth 1 -type d -name backup*completo`
-			do
-				dname=`basename $dname`
-			done
-			
-			if [ -z "$dname" ]
+			echo 'ERROR: unable to find any incremental or full backup' >&2
+			echo "${destination_dir} does not seem to contain any incremental or full backup" >&2
+			exit 11
+		else
+			# At this point dname_completo is assumed to be non empty
+			if [ -z "${dname_incrementale}" ]
 			then
-				echo 'ERROR: unable to find any incremental or full backup' >&2
-				echo "${destination_dir} does not seem to contain any incremental or full backup" >&2
-				exit 11
+				dname=${dname_completo}
+			else
+				# Which one was is the "youngest"?
+				if [ ${dname_completo:6:14} \< ${dname_incrementale:6:14} ]
+				then
+					dname=${dname_incrementale}
+				else
+					dname=${dname_completo}
+				fi
 			fi
 		fi
-		
 		;;
 	*)
 		echo 'ERROR: unsupported backup type' >&2
